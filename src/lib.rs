@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+mod parser;
+
 pub struct GraphAST {
     pub is_strict: bool,
     pub is_directed: bool,
