@@ -1,5 +1,6 @@
 extern crate nom;
 
+use crate::types::GraphAST;
 use nom::branch::alt;
 use nom::bytes::complete::tag_no_case;
 use nom::character::complete::space0;
@@ -20,4 +21,16 @@ fn parse_directed(s: &str) -> IResult<&str, bool> {
     let (s, out) = alt((directed, indirected))(s)?;
     let (s, _) = space0(s)?;
     Ok((s, out))
+}
+
+fn parse_graph(s: &str) -> IResult<&str, GraphAST> {
+    let (s, is_strict) = parse_strict(s)?;
+    let (s, is_directed) = parse_directed(s)?;
+    let graph = GraphAST {
+        is_strict,
+        is_directed,
+        id: None,
+        stmt: vec![]
+    };
+    Ok((s, graph))
 }
