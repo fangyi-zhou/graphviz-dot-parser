@@ -41,10 +41,9 @@ fn parse_graph(s: &str) -> IResult<&str, GraphAST> {
 mod tests {
     use crate::types::GraphAST;
     fn parse(input: &str) -> (&str, GraphAST) {
-        if let Ok((rest, graph)) = crate::parser::parse_graph(input) {
-            (rest, graph)
-        } else {
-            panic!()
+        match crate::parser::parse_graph(input) {
+            Ok((rest, graph)) => (rest, graph),
+            Err(e) => panic!("{}", e),
         }
     }
 
