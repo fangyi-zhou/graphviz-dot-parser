@@ -39,48 +39,45 @@ fn parse_graph(s: &str) -> IResult<&str, GraphAST> {
 
 #[cfg(test)]
 mod tests {
+    use crate::types::GraphAST;
+    fn parse(input: &str) -> (&str, GraphAST) {
+        if let Ok((rest, graph)) = crate::parser::parse_graph(input) {
+            (rest, graph)
+        } else {
+            panic!()
+        }
+    }
+
     #[test]
     fn can_parse_empty_graph_1() {
         let input = "strict graph {}";
-        if let Ok((rest, graph)) = crate::parser::parse_graph(input) {
-            assert_eq!(rest, "");
-            assert_eq!(graph.is_strict, true);
-            assert_eq!(graph.is_directed, false);
-        } else {
-            panic!();
-        }
+        let (rest, graph) = parse(input);
+        assert_eq!(rest, "");
+        assert_eq!(graph.is_strict, true);
+        assert_eq!(graph.is_directed, false);
     }
     #[test]
     fn can_parse_empty_graph_2() {
         let input = "graph {}";
-        if let Ok((rest, graph)) = crate::parser::parse_graph(input) {
-            assert_eq!(rest, "");
-            assert_eq!(graph.is_strict, false);
-            assert_eq!(graph.is_directed, false);
-        } else {
-            panic!();
-        }
+        let (rest, graph) = parse(input);
+        assert_eq!(rest, "");
+        assert_eq!(graph.is_strict, false);
+        assert_eq!(graph.is_directed, false);
     }
     #[test]
     fn can_parse_empty_graph_3() {
         let input = "strict digraph {}";
-        if let Ok((rest, graph)) = crate::parser::parse_graph(input) {
-            assert_eq!(rest, "");
-            assert_eq!(graph.is_strict, true);
-            assert_eq!(graph.is_directed, true);
-        } else {
-            panic!();
-        }
+        let (rest, graph) = parse(input);
+        assert_eq!(rest, "");
+        assert_eq!(graph.is_strict, true);
+        assert_eq!(graph.is_directed, true);
     }
     #[test]
     fn can_parse_empty_graph_4() {
         let input = "digraph {}";
-        if let Ok((rest, graph)) = crate::parser::parse_graph(input) {
-            assert_eq!(rest, "");
-            assert_eq!(graph.is_strict, false);
-            assert_eq!(graph.is_directed, true);
-        } else {
-            panic!();
-        }
+        let (rest, graph) = parse(input);
+        assert_eq!(rest, "");
+        assert_eq!(graph.is_strict, false);
+        assert_eq!(graph.is_directed, true);
     }
 }
