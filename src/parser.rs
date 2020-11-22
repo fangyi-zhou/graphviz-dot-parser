@@ -4,7 +4,7 @@ use crate::types::GraphAST;
 use nom::branch::alt;
 use nom::bytes::complete::tag_no_case;
 use nom::character::complete::{char, digit0, digit1, satisfy, space0};
-use nom::combinator::{map, opt, recognize};
+use nom::combinator::{map, opt, recognize, value};
 use nom::multi::many0;
 use nom::sequence::{pair, tuple};
 use nom::IResult;
@@ -18,8 +18,8 @@ fn parse_strict(s: &str) -> IResult<&str, bool> {
 
 fn parse_directed(s: &str) -> IResult<&str, bool> {
     let (s, _) = space0(s)?;
-    let indirected = map(tag_no_case("graph"), |_| false);
-    let directed = map(tag_no_case("digraph"), |_| true);
+    let indirected = value(false, tag_no_case("graph"));
+    let directed = value(true, tag_no_case("digraph"));
     let (s, out) = alt((directed, indirected))(s)?;
     let (s, _) = space0(s)?;
     Ok((s, out))
