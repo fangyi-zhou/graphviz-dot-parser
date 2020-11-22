@@ -46,6 +46,8 @@ mod tests {
             assert_eq!(rest, "");
             assert_eq!(graph.is_strict, true);
             assert_eq!(graph.is_directed, false);
+        } else {
+            panic!();
         }
     }
     #[test]
@@ -55,6 +57,8 @@ mod tests {
             assert_eq!(rest, "");
             assert_eq!(graph.is_strict, false);
             assert_eq!(graph.is_directed, false);
+        } else {
+            panic!();
         }
     }
     #[test]
@@ -64,6 +68,8 @@ mod tests {
             assert_eq!(rest, "");
             assert_eq!(graph.is_strict, true);
             assert_eq!(graph.is_directed, true);
+        } else {
+            panic!();
         }
     }
     #[test]
@@ -73,6 +79,8 @@ mod tests {
             assert_eq!(rest, "");
             assert_eq!(graph.is_strict, false);
             assert_eq!(graph.is_directed, true);
+        } else {
+            panic!();
         }
     }
 }
