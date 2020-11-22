@@ -3,8 +3,10 @@ extern crate nom;
 use crate::types::GraphAST;
 use nom::branch::alt;
 use nom::bytes::complete::tag_no_case;
-use nom::character::complete::{char, space0};
-use nom::combinator::{map, opt};
+use nom::character::complete::{char, satisfy, space0};
+use nom::combinator::{map, opt, recognize};
+use nom::multi::many0;
+use nom::sequence::pair;
 use nom::IResult;
 
 fn parse_strict(s: &str) -> IResult<&str, bool> {
@@ -26,15 +28,44 @@ fn parse_directed(s: &str) -> IResult<&str, bool> {
 fn parse_graph(s: &str) -> IResult<&str, GraphAST> {
     let (s, is_strict) = parse_strict(s)?;
     let (s, is_directed) = parse_directed(s)?;
+    let (s, id) = opt(parse_id)(s)?;
     let (s, _) = char('{')(s)?;
     let (s, _) = char('}')(s)?;
     let graph = GraphAST {
         is_strict,
         is_directed,
-        id: None,
+        id,
         stmt: vec![],
     };
     Ok((s, graph))
+}
+
+fn parse_id(s: &str) -> IResult<&str, String> {
+    // Any string of alphabetic ([a-zA-Z\200-\377]) characters, underscores ('_') or digits ([0-9]), not beginning with a digit;
+    let non_underscores = satisfy(|c| {
+        (c >= 'a' && c <= 'z')
+            || (c >= 'A' && c <= 'Z')
+            || (c >= '0' && c <= '9')
+            || (c >= char::from(0o200) && c <= char::from(0o377))
+    });
+    let all_chars = satisfy(|c| {
+        (c == '_')
+            || (c >= 'a' && c <= 'z')
+            || (c >= 'A' && c <= 'Z')
+            || (c >= '0' && c <= '9')
+            || (c >= char::from(0o200) && c <= char::from(0o377))
+    });
+    let mut id_string = recognize(pair(non_underscores, many0(all_chars)));
+
+    // TODO
+    // a numeral [-]?(.[0-9]+ | [0-9]+(.[0-9]*)? );
+
+    // any double-quoted string ("...") possibly containing escaped quotes (\")1;
+
+    // HTML: Not supported
+    let (s, id) = id_string(s)?;
+    let (s, _) = space0(s)?;
+    Ok((s, String::from(id)))
 }
 
 #[cfg(test)]
@@ -78,5 +109,13 @@ mod tests {
         assert_eq!(rest, "");
         assert_eq!(graph.is_strict, false);
         assert_eq!(graph.is_directed, true);
+    }
+
+    #[test]
+    fn can_parse_empty_graph_with_id() {
+        let input = "graph g {}";
+        let (rest, graph) = parse(input);
+        assert_eq!(rest, "");
+        assert_eq!(graph.id, Some(String::from("g")));
     }
 }
