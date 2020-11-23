@@ -2,11 +2,11 @@ extern crate nom;
 
 use crate::types::GraphAST;
 use nom::branch::alt;
-use nom::bytes::complete::tag_no_case;
-use nom::character::complete::{char, digit0, digit1, satisfy, space0};
+use nom::bytes::complete::{escaped_transform, tag_no_case};
+use nom::character::complete::{char, digit0, digit1, none_of, satisfy, space0};
 use nom::combinator::{map, opt, recognize, value};
 use nom::multi::many0;
-use nom::sequence::{pair, tuple};
+use nom::sequence::{pair, preceded, terminated, tuple};
 use nom::IResult;
 
 fn parse_strict(s: &str) -> IResult<&str, bool> {
@@ -55,24 +55,42 @@ fn parse_id(s: &str) -> IResult<&str, String> {
             || (c >= '0' && c <= '9')
             || (c >= char::from(0o200) && c <= char::from(0o377))
     });
-    let id_string = recognize(pair(non_digits, many0(all_chars)));
+    let id_string = map(recognize(pair(non_digits, many0(all_chars))), |s| {
+        String::from(s)
+    });
 
     // a numeral [-]?(.[0-9]+ | [0-9]+(.[0-9]*)? );
-    let id_numeral = recognize(pair(
-        opt(char('-')),
-        alt((
-            recognize(pair(char('.'), digit1)),
-            recognize(pair(digit1, opt(tuple((char('.'), digit0))))),
+    let id_numeral = map(
+        recognize(pair(
+            opt(char('-')),
+            alt((
+                recognize(pair(char('.'), digit1)),
+                recognize(pair(digit1, opt(tuple((char('.'), digit0))))),
+            )),
         )),
-    ));
+        |s| String::from(s),
+    );
 
-    // TODO
     // any double-quoted string ("...") possibly containing escaped quotes (\")1;
+    let id_quoted = preceded(
+        char('\"'),
+        terminated(
+            map(
+                many0(escaped_transform(
+                    none_of("\"\\"),
+                    '\\',
+                    value('\"', char('\"')),
+                )),
+                |v| v.into_iter().collect(),
+            ),
+            char('\"'),
+        ),
+    );
 
     // HTML: Not supported
-    let (s, id) = alt((id_string, id_numeral))(s)?;
+    let (s, id) = alt((id_string, id_numeral, id_quoted))(s)?;
     let (s, _) = space0(s)?;
-    Ok((s, String::from(id)))
+    Ok((s, id))
 }
 
 #[cfg(test)]
@@ -132,5 +150,29 @@ mod tests {
         let (rest, graph) = parse(input);
         assert_eq!(rest, "");
         assert_eq!(graph.id, Some(String::from("2.34")));
+    }
+
+    #[test]
+    fn can_parse_quoted_id() {
+        let input = "graph \"2.34\" {}";
+        let (rest, graph) = parse(input);
+        assert_eq!(rest, "");
+        assert_eq!(graph.id, Some(String::from("2.34")));
+    }
+
+    #[test]
+    fn can_parse_quoted_id_with_space() {
+        let input = "graph \"2 . 34\" {}";
+        let (rest, graph) = parse(input);
+        assert_eq!(rest, "");
+        assert_eq!(graph.id, Some(String::from("2 . 34")));
+    }
+
+    #[test]
+    fn can_parse_quoted_id_with_escape() {
+        let input = "graph \"2\\\"34\" {}";
+        let (rest, graph) = parse(input);
+        assert_eq!(rest, "");
+        assert_eq!(graph.id, Some(String::from("2\"34")));
     }
 }
