@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use petgraph::EdgeType;
 use petgraph::Graph;
+use std::collections::HashMap;
 
 pub struct GraphAST {
     pub is_strict: bool,

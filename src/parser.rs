@@ -1,9 +1,11 @@
 extern crate nom;
 
-use crate::types::{GraphAST, Stmt};
+use crate::types::{Attributes, GraphAST, Stmt};
 use nom::branch::alt;
 use nom::bytes::complete::{escaped_transform, tag, tag_no_case};
-use nom::character::complete::{char, digit0, digit1, multispace0, none_of, satisfy, space0};
+use nom::character::complete::{
+    char, digit0, digit1, multispace0, none_of, one_of, satisfy, space0,
+};
 use nom::combinator::{eof, map, opt, recognize, value};
 use nom::multi::many0;
 use nom::sequence::{pair, preceded, terminated, tuple};
@@ -25,10 +27,21 @@ fn parse_directed(s: &str) -> IResult<&str, bool> {
     Ok((s, out))
 }
 
+fn parse_attributes(s: &str) -> IResult<&str, Attributes> {
+    let a_list = many0(terminated(
+        map(tuple((parse_id, char('='), parse_id)), |(fst, _, snd)| {
+            (fst, snd)
+        }),
+        opt(one_of(",;")),
+    ));
+    let (s, attr_list) = many0(preceded(char('['), terminated(a_list, char(')'))))(s)?;
+    Ok((s, attr_list.concat()))
+}
+
 fn parse_node_statement(s: &str) -> IResult<&str, Stmt> {
     let (s, id) = parse_id(s)?;
-    // TODO: Attributes
-    Ok((s, Stmt::Node(id, vec![])))
+    let (s, attrs) = parse_attributes(s)?;
+    Ok((s, Stmt::Node(id, attrs)))
 }
 
 fn parse_edge_statement<'a>(is_directed: bool) -> impl Fn(&'a str) -> IResult<&'a str, Stmt> {
@@ -41,8 +54,8 @@ fn parse_edge_statement<'a>(is_directed: bool) -> impl Fn(&'a str) -> IResult<&'
         let (s, id_to) = parse_id(s)?;
         // TODO: Subgraph
         // TODO: Multiple edges in single statement
-        // TODO: Attributes
-        Ok((s, Stmt::Edge(id_from, id_to, vec![])))
+        let (s, attrs) = parse_attributes(s)?;
+        Ok((s, Stmt::Edge(id_from, id_to, attrs)))
     }
 }
 
@@ -222,10 +235,7 @@ mod tests {
         }";
         let (rest, graph) = parse(input);
         assert_eq!(rest, "");
-        assert_eq!(
-            graph.stmt,
-            vec![Stmt::Node(String::from("1"), vec![])]
-        )
+        assert_eq!(graph.stmt, vec![Stmt::Node(String::from("1"), vec![])])
     }
 
     #[test]
