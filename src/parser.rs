@@ -243,4 +243,23 @@ mod tests {
             ]
         )
     }
+
+    #[test]
+    fn can_parse_graph_with_nodes_and_edges_directed() {
+        let input = "digraph {
+            1;
+            2;
+            1 -> 2;
+        }";
+        let (rest, graph) = parse(input);
+        assert_eq!(rest, "");
+        assert_eq!(
+            graph.stmt,
+            vec![
+                Stmt::Node(String::from("1"), HashMap::new()),
+                Stmt::Node(String::from("2"), HashMap::new()),
+                Stmt::Edge(String::from("1"), String::from("2")),
+            ]
+        )
+    }
 }
