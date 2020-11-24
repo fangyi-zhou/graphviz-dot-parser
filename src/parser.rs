@@ -8,7 +8,6 @@ use nom::combinator::{eof, map, opt, recognize, value};
 use nom::multi::many0;
 use nom::sequence::{pair, preceded, terminated, tuple};
 use nom::IResult;
-use std::collections::HashMap;
 
 fn parse_strict(s: &str) -> IResult<&str, bool> {
     let (s, _) = space0(s)?;
@@ -29,7 +28,7 @@ fn parse_directed(s: &str) -> IResult<&str, bool> {
 fn parse_node_statement(s: &str) -> IResult<&str, Stmt> {
     let (s, id) = parse_id(s)?;
     // TODO: Attributes
-    Ok((s, Stmt::Node(id, HashMap::new())))
+    Ok((s, Stmt::Node(id, vec![])))
 }
 
 fn parse_edge_statement<'a>(is_directed: bool) -> impl Fn(&'a str) -> IResult<&'a str, Stmt> {
@@ -43,7 +42,7 @@ fn parse_edge_statement<'a>(is_directed: bool) -> impl Fn(&'a str) -> IResult<&'
         // TODO: Subgraph
         // TODO: Multiple edges in single statement
         // TODO: Attributes
-        Ok((s, Stmt::Edge(id_from, id_to, HashMap::new())))
+        Ok((s, Stmt::Edge(id_from, id_to, vec![])))
     }
 }
 
@@ -136,7 +135,6 @@ fn parse_id(s: &str) -> IResult<&str, String> {
 #[cfg(test)]
 mod tests {
     use crate::types::*;
-    use std::collections::HashMap;
     fn parse(input: &str) -> (&str, GraphAST) {
         match crate::parser::parse_graph(input) {
             Ok((rest, graph)) => (rest, graph),
@@ -226,7 +224,7 @@ mod tests {
         assert_eq!(rest, "");
         assert_eq!(
             graph.stmt,
-            vec![Stmt::Node(String::from("1"), HashMap::new())]
+            vec![Stmt::Node(String::from("1"), vec![])]
         )
     }
 
@@ -242,9 +240,9 @@ mod tests {
         assert_eq!(
             graph.stmt,
             vec![
-                Stmt::Node(String::from("1"), HashMap::new()),
-                Stmt::Node(String::from("2"), HashMap::new()),
-                Stmt::Edge(String::from("1"), String::from("2"), HashMap::new()),
+                Stmt::Node(String::from("1"), vec![]),
+                Stmt::Node(String::from("2"), vec![]),
+                Stmt::Edge(String::from("1"), String::from("2"), vec![]),
             ]
         )
     }
@@ -261,9 +259,9 @@ mod tests {
         assert_eq!(
             graph.stmt,
             vec![
-                Stmt::Node(String::from("1"), HashMap::new()),
-                Stmt::Node(String::from("2"), HashMap::new()),
-                Stmt::Edge(String::from("1"), String::from("2"), HashMap::new()),
+                Stmt::Node(String::from("1"), vec![]),
+                Stmt::Node(String::from("2"), vec![]),
+                Stmt::Edge(String::from("1"), String::from("2"), vec![]),
             ]
         )
     }

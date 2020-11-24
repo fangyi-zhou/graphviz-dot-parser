@@ -1,6 +1,6 @@
+use std::collections::HashMap;
 use petgraph::EdgeType;
 use petgraph::Graph;
-use std::collections::HashMap;
 
 pub struct GraphAST {
     pub is_strict: bool,
@@ -54,7 +54,7 @@ pub enum AttributeType {
     Edge,
 }
 
-pub type Attributes = HashMap<String, String>;
+pub type Attributes = Vec<(String, String)>;
 
 #[derive(Eq, PartialEq, Debug)]
 pub enum Stmt {
@@ -69,7 +69,6 @@ pub enum Stmt {
 #[cfg(test)]
 mod tests {
     use crate::types::*;
-    use std::collections::HashMap;
     #[test]
     fn test_petgraph_conversion_directed() {
         let g = GraphAST {
@@ -77,9 +76,9 @@ mod tests {
             is_directed: true,
             id: None,
             stmt: vec![
-                Stmt::Node(String::from("1"), HashMap::new()),
-                Stmt::Node(String::from("2"), HashMap::new()),
-                Stmt::Edge(String::from("1"), String::from("2"), HashMap::new()),
+                Stmt::Node(String::from("1"), vec![]),
+                Stmt::Node(String::from("2"), vec![]),
+                Stmt::Edge(String::from("1"), String::from("2"), vec![]),
             ],
         };
         let graph = g.to_undirected_graph();
@@ -99,9 +98,9 @@ mod tests {
             is_directed: false,
             id: None,
             stmt: vec![
-                Stmt::Node(String::from("1"), HashMap::new()),
-                Stmt::Node(String::from("2"), HashMap::new()),
-                Stmt::Edge(String::from("1"), String::from("2"), HashMap::new()),
+                Stmt::Node(String::from("1"), vec![]),
+                Stmt::Node(String::from("2"), vec![]),
+                Stmt::Edge(String::from("1"), String::from("2"), vec![]),
             ],
         };
         let graph = g.to_directed_graph();
