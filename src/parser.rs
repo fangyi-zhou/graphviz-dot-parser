@@ -4,7 +4,7 @@ use crate::types::{GraphAST, Stmt};
 use nom::branch::alt;
 use nom::bytes::complete::{escaped_transform, tag, tag_no_case};
 use nom::character::complete::{char, digit0, digit1, multispace0, none_of, satisfy, space0};
-use nom::combinator::{map, opt, recognize, value};
+use nom::combinator::{eof, map, opt, recognize, value};
 use nom::multi::many0;
 use nom::sequence::{pair, preceded, terminated, tuple};
 use nom::IResult;
@@ -66,6 +66,7 @@ fn parse_graph(s: &str) -> IResult<&str, GraphAST> {
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
     let (s, _) = multispace0(s)?;
+    let (s, _) = eof(s)?;
     let graph = GraphAST {
         is_strict,
         is_directed,
@@ -73,6 +74,10 @@ fn parse_graph(s: &str) -> IResult<&str, GraphAST> {
         stmt,
     };
     Ok((s, graph))
+}
+
+pub fn parse(s: &str) -> Result<GraphAST, nom::error::Error<&str>> {
+    nom::Finish::finish(parse_graph(s)).map(|(_, g)| g)
 }
 
 fn parse_id(s: &str) -> IResult<&str, String> {
