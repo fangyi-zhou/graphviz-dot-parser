@@ -68,7 +68,7 @@ fn parse_id(s: &str) -> IResult<&str, String> {
                 recognize(pair(digit1, opt(tuple((char('.'), digit0))))),
             )),
         )),
-        |s| String::from(s),
+        String::from,
     );
 
     // any double-quoted string ("...") possibly containing escaped quotes (\")1;
