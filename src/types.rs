@@ -65,3 +65,52 @@ pub enum Stmt {
     Assign(String, String),
     SubGraph(Option<String>, Vec<Stmt>),
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::types::*;
+    use std::collections::HashMap;
+    #[test]
+    fn test_petgraph_conversion_directed() {
+        let g = GraphAST {
+            is_strict: false,
+            is_directed: true,
+            id: None,
+            stmt: vec![
+                Stmt::Node(String::from("1"), HashMap::new()),
+                Stmt::Node(String::from("2"), HashMap::new()),
+                Stmt::Edge(String::from("1"), String::from("2")),
+            ],
+        };
+        let graph = g.to_undirected_graph();
+        assert_eq!(graph.is_none(), true);
+        let graph = g.to_directed_graph();
+        assert_eq!(graph.is_some(), true);
+        let graph = graph.unwrap();
+        assert_eq!(graph.is_directed(), true);
+        assert_eq!(graph.node_count(), 2);
+        assert_eq!(graph.edge_count(), 1);
+    }
+
+    #[test]
+    fn test_petgraph_conversion_undirected() {
+        let g = GraphAST {
+            is_strict: false,
+            is_directed: false,
+            id: None,
+            stmt: vec![
+                Stmt::Node(String::from("1"), HashMap::new()),
+                Stmt::Node(String::from("2"), HashMap::new()),
+                Stmt::Edge(String::from("1"), String::from("2")),
+            ],
+        };
+        let graph = g.to_directed_graph();
+        assert_eq!(graph.is_none(), true);
+        let graph = g.to_undirected_graph();
+        assert_eq!(graph.is_some(), true);
+        let graph = graph.unwrap();
+        assert_eq!(graph.is_directed(), false);
+        assert_eq!(graph.node_count(), 2);
+        assert_eq!(graph.edge_count(), 1);
+    }
+}
