@@ -2,7 +2,7 @@ extern crate nom;
 
 use crate::types::{GraphAST, Stmt};
 use nom::branch::alt;
-use nom::bytes::complete::{escaped_transform, tag_no_case};
+use nom::bytes::complete::{escaped_transform, tag, tag_no_case};
 use nom::character::complete::{char, digit0, digit1, multispace0, none_of, satisfy, space0};
 use nom::combinator::{map, opt, recognize, value};
 use nom::multi::many0;
@@ -32,10 +32,25 @@ fn parse_node_statement(s: &str) -> IResult<&str, Stmt> {
     Ok((s, Stmt::Node(id, HashMap::new())))
 }
 
-fn parse_statement(is_strict: bool) -> impl Fn(&str) -> IResult<&str, Stmt> {
+fn parse_edge_statement<'a>(is_directed: bool) -> impl Fn(&'a str) -> IResult<&'a str, Stmt> {
+    let parse_edge_op = if is_directed { tag("->") } else { tag("--") };
+    move |s| {
+        let (s, id_from) = parse_id(s)?;
+        let (s, _) = space0(s)?;
+        let (s, _) = parse_edge_op(s)?;
+        let (s, _) = space0(s)?;
+        let (s, id_to) = parse_id(s)?;
+        // TODO: Subgraph
+        // TODO: Multiple edges in single statement
+        // TODO: Attributes
+        Ok((s, Stmt::Edge(id_from, id_to)))
+    }
+}
+
+fn parse_statement(is_directed: bool) -> impl Fn(&str) -> IResult<&str, Stmt> {
     move |s| {
         let (s, _) = multispace0(s)?;
-        let (s, stmt) = parse_node_statement(s)?;
+        let (s, stmt) = alt((parse_edge_statement(is_directed), parse_node_statement))(s)?;
         let (s, _) = multispace0(s)?;
         let (s, _) = char(';')(s)?;
         Ok((s, stmt))
@@ -47,7 +62,7 @@ fn parse_graph(s: &str) -> IResult<&str, GraphAST> {
     let (s, is_directed) = parse_directed(s)?;
     let (s, id) = opt(parse_id)(s)?;
     let (s, _) = char('{')(s)?;
-    let (s, stmt) = many0(parse_statement(is_strict))(s)?;
+    let (s, stmt) = many0(parse_statement(is_directed))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
     let (s, _) = multispace0(s)?;
@@ -207,6 +222,25 @@ mod tests {
         assert_eq!(
             graph.stmt,
             vec![Stmt::Node(String::from("1"), HashMap::new())]
+        )
+    }
+
+    #[test]
+    fn can_parse_graph_with_nodes_and_edges() {
+        let input = "graph {
+            1;
+            2;
+            1 -- 2;
+        }";
+        let (rest, graph) = parse(input);
+        assert_eq!(rest, "");
+        assert_eq!(
+            graph.stmt,
+            vec![
+                Stmt::Node(String::from("1"), HashMap::new()),
+                Stmt::Node(String::from("2"), HashMap::new()),
+                Stmt::Edge(String::from("1"), String::from("2")),
+            ]
         )
     }
 }
