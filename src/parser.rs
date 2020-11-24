@@ -1,13 +1,14 @@
 extern crate nom;
 
-use crate::types::GraphAST;
+use crate::types::{GraphAST, Stmt};
 use nom::branch::alt;
 use nom::bytes::complete::{escaped_transform, tag_no_case};
-use nom::character::complete::{char, digit0, digit1, none_of, satisfy, space0};
+use nom::character::complete::{char, digit0, digit1, multispace0, none_of, satisfy, space0};
 use nom::combinator::{map, opt, recognize, value};
 use nom::multi::many0;
 use nom::sequence::{pair, preceded, terminated, tuple};
 use nom::IResult;
+use std::collections::HashMap;
 
 fn parse_strict(s: &str) -> IResult<&str, bool> {
     let (s, _) = space0(s)?;
@@ -25,17 +26,36 @@ fn parse_directed(s: &str) -> IResult<&str, bool> {
     Ok((s, out))
 }
 
+fn parse_node_statement(s: &str) -> IResult<&str, Stmt> {
+    let (s, id) = parse_id(s)?;
+    // TODO: Attributes
+    Ok((s, Stmt::Node(id, HashMap::new())))
+}
+
+fn parse_statement(is_strict: bool) -> impl Fn(&str) -> IResult<&str, Stmt> {
+    move |s| {
+        let (s, _) = multispace0(s)?;
+        let (s, stmt) = parse_node_statement(s)?;
+        let (s, _) = multispace0(s)?;
+        let (s, _) = char(';')(s)?;
+        Ok((s, stmt))
+    }
+}
+
 fn parse_graph(s: &str) -> IResult<&str, GraphAST> {
     let (s, is_strict) = parse_strict(s)?;
     let (s, is_directed) = parse_directed(s)?;
     let (s, id) = opt(parse_id)(s)?;
     let (s, _) = char('{')(s)?;
+    let (s, stmt) = many0(parse_statement(is_strict))(s)?;
+    let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
+    let (s, _) = multispace0(s)?;
     let graph = GraphAST {
         is_strict,
         is_directed,
         id,
-        stmt: vec![],
+        stmt,
     };
     Ok((s, graph))
 }
@@ -95,7 +115,8 @@ fn parse_id(s: &str) -> IResult<&str, String> {
 
 #[cfg(test)]
 mod tests {
-    use crate::types::GraphAST;
+    use crate::types::*;
+    use std::collections::HashMap;
     fn parse(input: &str) -> (&str, GraphAST) {
         match crate::parser::parse_graph(input) {
             Ok((rest, graph)) => (rest, graph),
@@ -174,5 +195,18 @@ mod tests {
         let (rest, graph) = parse(input);
         assert_eq!(rest, "");
         assert_eq!(graph.id, Some(String::from("2\"34")));
+    }
+
+    #[test]
+    fn can_parse_graph_with_nodes() {
+        let input = "graph {
+            1;
+        }";
+        let (rest, graph) = parse(input);
+        assert_eq!(rest, "");
+        assert_eq!(
+            graph.stmt,
+            vec![Stmt::Node(String::from("1"), HashMap::new())]
+        )
     }
 }

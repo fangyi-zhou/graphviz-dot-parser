@@ -6,6 +6,7 @@ pub struct GraphAST {
     pub stmt: Vec<Stmt>,
 }
 
+#[derive(Eq, PartialEq, Debug)]
 pub enum AttributeType {
     Graph,
     Node,
@@ -14,6 +15,7 @@ pub enum AttributeType {
 
 pub type Attributes = HashMap<String, String>;
 
+#[derive(Eq, PartialEq, Debug)]
 pub enum Stmt {
     // port is unsupported
     Node(String, Attributes),
