@@ -43,7 +43,7 @@ fn parse_edge_statement<'a>(is_directed: bool) -> impl Fn(&'a str) -> IResult<&'
         // TODO: Subgraph
         // TODO: Multiple edges in single statement
         // TODO: Attributes
-        Ok((s, Stmt::Edge(id_from, id_to)))
+        Ok((s, Stmt::Edge(id_from, id_to, HashMap::new())))
     }
 }
 
@@ -244,7 +244,7 @@ mod tests {
             vec![
                 Stmt::Node(String::from("1"), HashMap::new()),
                 Stmt::Node(String::from("2"), HashMap::new()),
-                Stmt::Edge(String::from("1"), String::from("2")),
+                Stmt::Edge(String::from("1"), String::from("2"), HashMap::new()),
             ]
         )
     }
@@ -263,7 +263,7 @@ mod tests {
             vec![
                 Stmt::Node(String::from("1"), HashMap::new()),
                 Stmt::Node(String::from("2"), HashMap::new()),
-                Stmt::Edge(String::from("1"), String::from("2")),
+                Stmt::Edge(String::from("1"), String::from("2"), HashMap::new()),
             ]
         )
     }

@@ -18,7 +18,7 @@ impl GraphAST {
                     let idx = g.add_node(n.clone());
                     nodes.insert(n, idx);
                 }
-                Stmt::Edge(n1, n2) => {
+                Stmt::Edge(n1, n2, _) => {
                     g.add_edge(*nodes.get(&n1).unwrap(), *nodes.get(&n2).unwrap(), ());
                 }
                 _ => {}
@@ -58,9 +58,9 @@ pub type Attributes = HashMap<String, String>;
 
 #[derive(Eq, PartialEq, Debug)]
 pub enum Stmt {
-    // port is unsupported
+    // Many features are currently not supported
     Node(String, Attributes),
-    Edge(String, String),
+    Edge(String, String, Attributes),
     Attr(AttributeType, Attributes),
     Assign(String, String),
     SubGraph(Option<String>, Vec<Stmt>),
@@ -79,7 +79,7 @@ mod tests {
             stmt: vec![
                 Stmt::Node(String::from("1"), HashMap::new()),
                 Stmt::Node(String::from("2"), HashMap::new()),
-                Stmt::Edge(String::from("1"), String::from("2")),
+                Stmt::Edge(String::from("1"), String::from("2"), HashMap::new()),
             ],
         };
         let graph = g.to_undirected_graph();
@@ -101,7 +101,7 @@ mod tests {
             stmt: vec![
                 Stmt::Node(String::from("1"), HashMap::new()),
                 Stmt::Node(String::from("2"), HashMap::new()),
-                Stmt::Edge(String::from("1"), String::from("2")),
+                Stmt::Edge(String::from("1"), String::from("2"), HashMap::new()),
             ],
         };
         let graph = g.to_directed_graph();
