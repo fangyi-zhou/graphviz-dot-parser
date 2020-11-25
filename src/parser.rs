@@ -28,13 +28,14 @@ fn parse_directed(s: &str) -> IResult<&str, bool> {
 }
 
 fn parse_attributes(s: &str) -> IResult<&str, Attributes> {
+    let (s, _) = space0(s)?;
     let a_list = many0(terminated(
         map(tuple((parse_id, char('='), parse_id)), |(fst, _, snd)| {
             (fst, snd)
         }),
-        opt(one_of(",;")),
+        opt(terminated(one_of(",;"), space0)),
     ));
-    let (s, attr_list) = many0(preceded(char('['), terminated(a_list, char(')'))))(s)?;
+    let (s, attr_list) = many0(preceded(char('['), terminated(a_list, char(']'))))(s)?;
     Ok((s, attr_list.concat()))
 }
 
