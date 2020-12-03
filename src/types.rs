@@ -10,16 +10,22 @@ pub struct GraphAST {
 }
 
 impl GraphAST {
-    fn to_graph_internal<Ty: EdgeType>(&self, g: &mut Graph<String, (), Ty>) {
+    fn to_graph_internal<Ty: EdgeType, N, E>(
+        &self,
+        node_parser: &dyn Fn(&String, &Attributes) -> N,
+        edge_parser: &dyn Fn(&Attributes) -> E,
+        g: &mut Graph<N, E, Ty>,
+    ) {
         let mut nodes = HashMap::new();
         for stmt in &self.stmt {
             match stmt {
-                Stmt::Node(n, _) => {
-                    let idx = g.add_node(n.clone());
+                Stmt::Node(n, attr) => {
+                    let idx = g.add_node(node_parser(n, attr));
                     nodes.insert(n, idx);
                 }
-                Stmt::Edge(n1, n2, _) => {
-                    g.add_edge(*nodes.get(&n1).unwrap(), *nodes.get(&n2).unwrap(), ());
+                Stmt::Edge(n1, n2, attrs) => {
+                    let e = edge_parser(attrs);
+                    g.add_edge(*nodes.get(&n1).unwrap(), *nodes.get(&n2).unwrap(), e);
                 }
                 _ => {}
             }
@@ -29,7 +35,7 @@ impl GraphAST {
     pub fn to_directed_graph(&self) -> Option<Graph<String, ()>> {
         if self.is_directed {
             let mut g = Graph::new();
-            self.to_graph_internal(&mut g);
+            self.to_graph_internal(&|n, _| n.clone(), &|_| (), &mut g);
             Some(g)
         } else {
             None
@@ -39,7 +45,7 @@ impl GraphAST {
     pub fn to_undirected_graph(&self) -> Option<Graph<String, (), petgraph::Undirected>> {
         if !self.is_directed {
             let mut g = Graph::new_undirected();
-            self.to_graph_internal(&mut g);
+            self.to_graph_internal(&|n, _| n.clone(), &|_| (), &mut g);
             Some(g)
         } else {
             None
