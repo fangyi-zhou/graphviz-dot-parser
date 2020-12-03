@@ -1,8 +1,11 @@
 [package]
 name = "graphviz-dot-parser"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["Fangyi Zhou <me@fangyi.io>"]
 edition = "2018"
+license = "MIT"
+repository = "https://github.com/fangyi-zhou/graphviz-dot-parser"
+description = "A simple (incomplete) parser for Graphviz DOT format"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
