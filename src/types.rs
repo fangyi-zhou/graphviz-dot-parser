@@ -32,6 +32,34 @@ impl GraphAST {
         }
     }
 
+    pub fn to_directed_graph_using<N, E>(
+        &self,
+        new_node: &dyn Fn(&String, &Attributes) -> N,
+        new_edge: &dyn Fn(&Attributes) -> E,
+    ) -> Option<Graph<N, E>> {
+        if self.is_directed {
+            let mut g = Graph::new();
+            self.to_graph_internal(new_node, new_edge, &mut g);
+            Some(g)
+        } else {
+            None
+        }
+    }
+
+    pub fn to_undirected_graph_using<N, E>(
+        &self,
+        new_node: &dyn Fn(&String, &Attributes) -> N,
+        new_edge: &dyn Fn(&Attributes) -> E,
+    ) -> Option<Graph<N, E, petgraph::Undirected>> {
+        if !self.is_directed {
+            let mut g = Graph::new_undirected();
+            self.to_graph_internal(new_node, new_edge, &mut g);
+            Some(g)
+        } else {
+            None
+        }
+    }
+
     pub fn to_directed_graph(&self) -> Option<Graph<String, ()>> {
         if self.is_directed {
             let mut g = Graph::new();
