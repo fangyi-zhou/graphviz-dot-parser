@@ -61,23 +61,11 @@ impl GraphAST {
     }
 
     pub fn to_directed_graph(&self) -> Option<Graph<String, ()>> {
-        if self.is_directed {
-            let mut g = Graph::new();
-            self.to_graph_internal(&|n, _| n.clone(), &|_| (), &mut g);
-            Some(g)
-        } else {
-            None
-        }
+        self.to_directed_graph_using(&|n, _| n.clone(), &|_| ())
     }
 
     pub fn to_undirected_graph(&self) -> Option<Graph<String, (), petgraph::Undirected>> {
-        if !self.is_directed {
-            let mut g = Graph::new_undirected();
-            self.to_graph_internal(&|n, _| n.clone(), &|_| (), &mut g);
-            Some(g)
-        } else {
-            None
-        }
+        self.to_undirected_graph_using(&|n, _| n.clone(), &|_| ())
     }
 }
 
