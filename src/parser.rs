@@ -97,16 +97,16 @@ fn parse_id(s: &str) -> IResult<&str, String> {
     // Any string of alphabetic ([a-zA-Z\200-\377]) characters, underscores ('_') or digits ([0-9]), not beginning with a digit;
     let non_digits = satisfy(|c| {
         (c == '_')
-            || (c >= 'a' && c <= 'z')
-            || (c >= 'A' && c <= 'Z')
-            || (c >= char::from(0o200) && c <= char::from(0o377))
+            || ('a'..='z').contains(&c)
+            || ('A'..='Z').contains(&c)
+            || (char::from(0o200)..=char::from(0o377)).contains(&c)
     });
     let all_chars = satisfy(|c| {
         (c == '_')
-            || (c >= 'a' && c <= 'z')
-            || (c >= 'A' && c <= 'Z')
-            || (c >= '0' && c <= '9')
-            || (c >= char::from(0o200) && c <= char::from(0o377))
+            || ('a'..='z').contains(&c)
+            || ('A'..='Z').contains(&c)
+            || ('0'..='9').contains(&c)
+            || (char::from(0o200)..=char::from(0o377)).contains(&c)
     });
     let id_string = map(recognize(pair(non_digits, many0(all_chars))), |s| {
         String::from(s)
