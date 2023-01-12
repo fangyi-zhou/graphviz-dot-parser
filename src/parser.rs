@@ -276,4 +276,23 @@ mod tests {
             ]
         )
     }
+
+    #[test]
+    fn can_parse_graph_without_semicolon() {
+        let input = "digraph {
+            1 
+            2
+            1 -> 2
+        }";
+        let (rest, graph) = parse(input);
+        assert_eq!(rest, "");
+        assert_eq!(
+            graph.stmt,
+            vec![
+                Stmt::Node(String::from("1"), vec![]),
+                Stmt::Node(String::from("2"), vec![]),
+                Stmt::Edge(String::from("1"), String::from("2"), vec![]),
+            ]
+        )
+    }
 }
