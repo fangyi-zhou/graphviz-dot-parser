@@ -4,8 +4,10 @@ use crate::types::{Attributes, GraphAST, Stmt};
 use nom::branch::alt;
 use nom::bytes::complete::{escaped_transform, tag, tag_no_case};
 use nom::character::complete::{
-    char, digit0, digit1, multispace0, none_of, one_of, satisfy, space0,
+    char, digit0, digit1, multispace0, none_of, not_line_ending, one_of,
+    satisfy, space0,
 };
+
 use nom::combinator::{eof, map, opt, recognize, value};
 use nom::multi::many0;
 use nom::sequence::{pair, preceded, terminated, tuple};
@@ -66,8 +68,14 @@ fn parse_statement(is_directed: bool) -> impl Fn(&str) -> IResult<&str, Stmt> {
         let (s, stmt) = alt((parse_edge_statement(is_directed), parse_node_statement))(s)?;
         let (s, _) = multispace0(s)?;
         let (s, _) = opt(char(';'))(s)?;
+        let (s, _) = multispace0(s)?;
+        let (s, _) = opt(parse_eol_comment)(s)?;
         Ok((s, stmt))
     }
+}
+
+fn parse_eol_comment(s: &str) -> IResult<&str, (&str, &str)> {
+    pair(tag("//"), not_line_ending)(s)
 }
 
 fn parse_graph(s: &str) -> IResult<&str, GraphAST> {
@@ -79,6 +87,7 @@ fn parse_graph(s: &str) -> IResult<&str, GraphAST> {
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
     let (s, _) = multispace0(s)?;
+    let (s, _) = opt(parse_eol_comment)(s)?;
     let (s, _) = eof(s)?;
     let graph = GraphAST {
         is_strict,
@@ -284,6 +293,44 @@ mod tests {
             2
             1 -> 2
         }";
+        let (rest, graph) = parse(input);
+        assert_eq!(rest, "");
+        assert_eq!(
+            graph.stmt,
+            vec![
+                Stmt::Node(String::from("1"), vec![]),
+                Stmt::Node(String::from("2"), vec![]),
+                Stmt::Edge(String::from("1"), String::from("2"), vec![]),
+            ]
+        )
+    }
+
+    #[test]
+    fn can_parse_graph_with_statement_comment() {
+        let input = "digraph {
+            1;// comment node 1 
+            2// comment node 2
+            1 -> 2 //comment edge
+        }";
+        let (rest, graph) = parse(input);
+        assert_eq!(rest, "");
+        assert_eq!(
+            graph.stmt,
+            vec![
+                Stmt::Node(String::from("1"), vec![]),
+                Stmt::Node(String::from("2"), vec![]),
+                Stmt::Edge(String::from("1"), String::from("2"), vec![]),
+            ]
+        )
+    }
+
+    #[test]
+    fn can_parse_graph_with_endgraph_comment() {
+        let input = "digraph {
+            1;
+            2;
+            1 -> 2;
+        } // comment2 ";
         let (rest, graph) = parse(input);
         assert_eq!(rest, "");
         assert_eq!(
