@@ -65,7 +65,7 @@ fn parse_statement(is_directed: bool) -> impl Fn(&str) -> IResult<&str, Stmt> {
         let (s, _) = multispace0(s)?;
         let (s, stmt) = alt((parse_edge_statement(is_directed), parse_node_statement))(s)?;
         let (s, _) = multispace0(s)?;
-        let (s, _) = char(';')(s)?;
+        let (s, _) = opt(char(';'))(s)?;
         Ok((s, stmt))
     }
 }
