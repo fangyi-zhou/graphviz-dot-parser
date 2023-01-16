@@ -336,4 +336,42 @@ mod tests {
             ]
         )
     }
+
+    #[test]
+    fn can_parse_graph_with_statement_comment() {
+        let input = "digraph {
+            1;// comment node 1
+            2// comment node 2
+            1 -> 2 //comment edge
+        }";
+        let (rest, graph) = parse(input);
+        assert_eq!(rest, "");
+        assert_eq!(
+            graph.stmt,
+            vec![
+                Stmt::Node(String::from("1"), vec![]),
+                Stmt::Node(String::from("2"), vec![]),
+                Stmt::Edge(String::from("1"), String::from("2"), vec![]),
+            ]
+        )
+    }
+
+    #[test]
+    fn can_parse_graph_with_endgraph_comment() {
+        let input = "digraph {
+            1;
+            2;
+            1 -> 2;
+        } // comment2 ";
+        let (rest, graph) = parse(input);
+        assert_eq!(rest, "");
+        assert_eq!(
+            graph.stmt,
+            vec![
+                Stmt::Node(String::from("1"), vec![]),
+                Stmt::Node(String::from("2"), vec![]),
+                Stmt::Edge(String::from("1"), String::from("2"), vec![]),
+            ]
+        )
+    }
 }
