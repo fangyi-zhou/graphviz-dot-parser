@@ -3,15 +3,24 @@ extern crate nom;
 use crate::types::{Attributes, GraphAST, Stmt};
 use nom::branch::alt;
 use nom::bytes::complete::{escaped_transform, tag, tag_no_case};
-use nom::character::complete::{char, digit0, digit1, multispace0, none_of, one_of, satisfy};
+use nom::character::complete::{
+    char, digit0, digit1, line_ending, multispace0, none_of, not_line_ending, one_of, satisfy,
+};
 use nom::combinator::{eof, map, opt, recognize, value};
 use nom::multi::many0;
 use nom::sequence::{pair, preceded, terminated, tuple};
 use nom::IResult;
 
-fn skip_space_and_comments(s: &str) -> IResult<&str, ()> {
+fn skip_line_comment(s: &str) -> IResult<&str, ()> {
     let (s, _) = multispace0(s)?;
+    let (s, _) = tag("//")(s)?;
+    let (s, _) = not_line_ending(s)?;
+    let (s, _) = opt(line_ending)(s)?;
     Ok((s, ()))
+}
+
+fn skip_space_and_comments(s: &str) -> IResult<&str, ()> {
+    alt((skip_line_comment, value((), multispace0)))(s)
 }
 
 fn parse_strict(s: &str) -> IResult<&str, bool> {
@@ -143,6 +152,7 @@ fn parse_id(s: &str) -> IResult<&str, String> {
         ),
     );
 
+    let (s, _) = skip_space_and_comments(s)?;
     // HTML: Not supported
     let (s, id) = alt((id_string, id_numeral, id_quoted))(s)?;
     let (s, _) = skip_space_and_comments(s)?;
@@ -151,11 +161,22 @@ fn parse_id(s: &str) -> IResult<&str, String> {
 
 #[cfg(test)]
 mod tests {
+    use crate::parser::skip_space_and_comments;
     use crate::types::*;
     fn parse(input: &str) -> (&str, GraphAST) {
         match crate::parser::parse_graph(input) {
             Ok((rest, graph)) => (rest, graph),
             Err(e) => panic!("{}", e),
+        }
+    }
+
+    #[test]
+    fn can_ignore_comments() {
+        let input = "// comments";
+        if let Ok((rest, ())) = skip_space_and_comments(input) {
+            assert_eq!(rest, "");
+        } else {
+            panic!();
         }
     }
 
