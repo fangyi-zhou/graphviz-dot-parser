@@ -3,37 +3,40 @@ extern crate nom;
 use crate::types::{Attributes, GraphAST, Stmt};
 use nom::branch::alt;
 use nom::bytes::complete::{escaped_transform, tag, tag_no_case};
-use nom::character::complete::{
-    char, digit0, digit1, multispace0, none_of, one_of, satisfy, space0,
-};
+use nom::character::complete::{char, digit0, digit1, multispace0, none_of, one_of, satisfy};
 use nom::combinator::{eof, map, opt, recognize, value};
 use nom::multi::many0;
 use nom::sequence::{pair, preceded, terminated, tuple};
 use nom::IResult;
 
+fn skip_space_and_comments(s: &str) -> IResult<&str, ()> {
+    let (s, _) = multispace0(s)?;
+    Ok((s, ()))
+}
+
 fn parse_strict(s: &str) -> IResult<&str, bool> {
-    let (s, _) = space0(s)?;
+    let (s, _) = skip_space_and_comments(s)?;
     let (s, out) = map(opt(tag_no_case("strict")), |tag| tag.is_some())(s)?;
-    let (s, _) = space0(s)?;
+    let (s, _) = skip_space_and_comments(s)?;
     Ok((s, out))
 }
 
 fn parse_directed(s: &str) -> IResult<&str, bool> {
-    let (s, _) = space0(s)?;
+    let (s, _) = skip_space_and_comments(s)?;
     let indirected = value(false, tag_no_case("graph"));
     let directed = value(true, tag_no_case("digraph"));
     let (s, out) = alt((directed, indirected))(s)?;
-    let (s, _) = space0(s)?;
+    let (s, _) = skip_space_and_comments(s)?;
     Ok((s, out))
 }
 
 fn parse_attributes(s: &str) -> IResult<&str, Attributes> {
-    let (s, _) = space0(s)?;
+    let (s, _) = skip_space_and_comments(s)?;
     let a_list = many0(terminated(
         map(tuple((parse_id, char('='), parse_id)), |(fst, _, snd)| {
             (fst, snd)
         }),
-        opt(terminated(one_of(",;"), space0)),
+        opt(terminated(one_of(",;"), skip_space_and_comments)),
     ));
     let (s, attr_list) = many0(preceded(char('['), terminated(a_list, char(']'))))(s)?;
     Ok((s, attr_list.concat()))
@@ -49,9 +52,9 @@ fn parse_edge_statement<'a>(is_directed: bool) -> impl Fn(&'a str) -> IResult<&'
     let parse_edge_op = if is_directed { tag("->") } else { tag("--") };
     move |s| {
         let (s, id_from) = parse_id(s)?;
-        let (s, _) = space0(s)?;
+        let (s, _) = skip_space_and_comments(s)?;
         let (s, _) = parse_edge_op(s)?;
-        let (s, _) = space0(s)?;
+        let (s, _) = skip_space_and_comments(s)?;
         let (s, id_to) = parse_id(s)?;
         // TODO: Subgraph
         // TODO: Multiple edges in single statement
@@ -62,9 +65,9 @@ fn parse_edge_statement<'a>(is_directed: bool) -> impl Fn(&'a str) -> IResult<&'
 
 fn parse_statement(is_directed: bool) -> impl Fn(&str) -> IResult<&str, Stmt> {
     move |s| {
-        let (s, _) = multispace0(s)?;
+        let (s, _) = skip_space_and_comments(s)?;
         let (s, stmt) = alt((parse_edge_statement(is_directed), parse_node_statement))(s)?;
-        let (s, _) = multispace0(s)?;
+        let (s, _) = skip_space_and_comments(s)?;
         let (s, _) = opt(char(';'))(s)?;
         Ok((s, stmt))
     }
@@ -76,9 +79,9 @@ fn parse_graph(s: &str) -> IResult<&str, GraphAST> {
     let (s, id) = opt(parse_id)(s)?;
     let (s, _) = char('{')(s)?;
     let (s, stmt) = many0(parse_statement(is_directed))(s)?;
-    let (s, _) = multispace0(s)?;
+    let (s, _) = skip_space_and_comments(s)?;
     let (s, _) = char('}')(s)?;
-    let (s, _) = multispace0(s)?;
+    let (s, _) = skip_space_and_comments(s)?;
     let (s, _) = eof(s)?;
     let graph = GraphAST {
         is_strict,
@@ -142,7 +145,7 @@ fn parse_id(s: &str) -> IResult<&str, String> {
 
     // HTML: Not supported
     let (s, id) = alt((id_string, id_numeral, id_quoted))(s)?;
-    let (s, _) = space0(s)?;
+    let (s, _) = skip_space_and_comments(s)?;
     Ok((s, id))
 }
 
@@ -283,6 +286,23 @@ mod tests {
             1
             2
             1 -> 2
+        }";
+        let (rest, graph) = parse(input);
+        assert_eq!(rest, "");
+        assert_eq!(
+            graph.stmt,
+            vec![
+                Stmt::Node(String::from("1"), vec![]),
+                Stmt::Node(String::from("2"), vec![]),
+                Stmt::Edge(String::from("1"), String::from("2"), vec![]),
+            ]
+        )
+    }
+
+    #[test]
+    fn can_parse_graph_without_linebreak() {
+        let input = "digraph {
+            1 2 1 -> 2
         }";
         let (rest, graph) = parse(input);
         assert_eq!(rest, "");
