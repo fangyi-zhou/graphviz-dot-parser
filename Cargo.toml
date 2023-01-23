@@ -10,5 +10,5 @@ description = "A simple (incomplete) parser for Graphviz DOT format"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-petgraph = "0.6.2"
+petgraph = { git = "https://github.com/petgraph/petgraph.git" }
 nom = "7.1.3"
