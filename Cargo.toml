@@ -11,4 +11,4 @@ description = "A simple (incomplete) parser for Graphviz DOT format"
 
 [dependencies]
 petgraph = "0.6.4"
-nom = "6"
+nom = "7.1.3"
